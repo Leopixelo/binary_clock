@@ -1,5 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <Arduino.h>
+#include <ESP32Time.h>
 
 #define LED_BUILTIN 15
 
@@ -9,30 +10,17 @@ const int LED_PIN = 16;
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
+ESP32Time rtc(3600);  // offset in seconds GMT+1
+
 void setup() {  //
-    pinMode(LED_BUILTIN, OUTPUT);
     pixels.begin();
 
     Serial.begin(115200);
+
+    rtc.setTime(30, 24, 15, 17, 1, 2021);
 }
 
 void loop() {
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(500);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(500);
-
-    Serial.write("testing");
-
-    for (int i = 0; i < NUM_PIXELS; i++) {
-        for (int j = 0; j < NUM_PIXELS; j++) {
-            if (j == i) {
-                pixels.setPixelColor(j, pixels.Color(16, 16, 16));
-            } else {
-                pixels.setPixelColor(j, pixels.Color(0, 0, 0));
-            }
-        }
-        pixels.show();
-        delay(100);
-    }
+    Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));
+    delay(1000);
 }
