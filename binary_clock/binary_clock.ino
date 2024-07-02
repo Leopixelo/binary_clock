@@ -12,11 +12,16 @@
 // const int NUM_PIXELS = 104;
 const int NUM_PIXELS = 16;
 const int LED_PIN = 16;
+const char ntp_server[] = "pool.ntp.org";
+const long gmt_offset_sec = 0;
+const int daylight_offset_sec = 3600 * 2;
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // ESP32Time rtc(3600);  // offset in seconds GMT+1
 RTC_DS3231 rtc;
+
+bool wifi_connected = false;
 
 void setup() {  //
     pixels.begin();
@@ -30,7 +35,101 @@ void setup() {  //
         while (1);
     }
 
-    Serial.println();
+    configure_wifi();
+
+    if (wifi_connected) {
+        configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+        delay(500);
+        configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+
+        set_rtc_to_ntp();
+    } else {
+        Serial.println("couldn't get time from NTP server because wifi is not connected");
+    }
+
+    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
+}
+
+void loop() {
+    DateTime now = rtc.now();
+    Serial.print("ESP32 RTC Date Time: ");
+    Serial.print(now.year(), DEC);
+    Serial.print('/');
+    Serial.print(now.month(), DEC);
+    Serial.print('/');
+    Serial.print(now.day(), DEC);
+    Serial.print(" (");
+    Serial.print(now.dayOfTheWeek());
+    Serial.print(") ");
+    Serial.print(now.hour(), DEC);
+    Serial.print(':');
+    Serial.print(now.minute(), DEC);
+    Serial.print(':');
+    Serial.println(now.second(), DEC);
+
+    delay(1000);
+
+    // struct tm timeinfo;
+    // get_local_time(&timeinfo);
+
+    // Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+    // Serial.print("Day of week: ");
+    // Serial.println(&timeinfo, "%A");
+    // Serial.print("Month: ");
+    // Serial.println(&timeinfo, "%B");
+    // Serial.print("Day of Month: ");
+    // Serial.println(&timeinfo, "%d");
+    // Serial.print("Year: ");
+    // Serial.println(&timeinfo, "%Y");
+    // Serial.print("Hour: ");
+    // Serial.println(&timeinfo, "%H");
+    // Serial.print("Hour (12 hour format): ");
+    // Serial.println(&timeinfo, "%I");
+    // Serial.print("Minute: ");
+    // Serial.println(&timeinfo, "%M");
+    // Serial.print("Second: ");
+    // Serial.println(&timeinfo, "%S");
+}
+
+void set_rtc_to_ntp() {
+    struct tm timeinfo;
+    if (!getLocalTime(&timeinfo)) {
+        Serial.println("failed to obtain time");
+        return;
+    }
+
+    if (timeinfo.tm_year > 100) {
+        timeinfo.tm_year -= 100;
+    }
+
+    rtc.adjust(DateTime(timeinfo.tm_year, timeinfo.tm_mon, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
+
+    Serial.print("got and set following time from NTP server: ");
+    print_time(&timeinfo);
+}
+
+void print_time(tm* timeinfo) {
+    Serial.println(timeinfo, "%Y-%m-%d %H:%M:%S");
+    // Serial.println(timeinfo, "%A, %B %d %Y %H:%M:%S");
+    // Serial.print("Day of week: ");
+    // Serial.println(timeinfo, "%A");
+    // Serial.print("Month: ");
+    // Serial.println(timeinfo, "%B");
+    // Serial.print("Day of Month: ");
+    // Serial.println(timeinfo, "%d");
+    // Serial.print("Year: ");
+    // Serial.println(timeinfo, "%Y");
+    // Serial.print("Hour: ");
+    // Serial.println(timeinfo, "%H");
+    // Serial.print("Hour (12 hour format): ");
+    // Serial.println(timeinfo, "%I");
+    // Serial.print("Minute: ");
+    // Serial.println(timeinfo, "%M");
+    // Serial.print("Second: ");
+    // Serial.println(timeinfo, "%S");
+}
+
+void configure_wifi() {
     Serial.print("[WiFi] Connecting to ");
     Serial.println(wifi_ssid);
 
@@ -42,8 +141,6 @@ void setup() {  //
     // will try for about 10 seconds (20x 500ms)
     const int wifi_retry_delay = 500;
     int wifi_retry_count = 20;
-
-    bool wifi_connected = false;
 
     // wait for the WiFi event
     while (wifi_retry_count > 0 && wifi_connected == false) {
@@ -86,52 +183,4 @@ void setup() {  //
         // Use disconnect function to force stop trying to connect
         WiFi.disconnect();
     }
-
-    configTime(0, 3600 * 2, "pool.ntp.org");
-
-    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
-}
-
-void loop() {
-    // DateTime now = rtc.now();
-    // Serial.print("ESP32 RTC Date Time: ");
-    // Serial.print(now.year(), DEC);
-    // Serial.print('/');
-    // Serial.print(now.month(), DEC);
-    // Serial.print('/');
-    // Serial.print(now.day(), DEC);
-    // Serial.print(" (");
-    // Serial.print(now.dayOfTheWeek());
-    // Serial.print(") ");
-    // Serial.print(now.hour(), DEC);
-    // Serial.print(':');
-    // Serial.print(now.minute(), DEC);
-    // Serial.print(':');
-    // Serial.println(now.second(), DEC);
-
-    delay(1000);
-
-    struct tm timeinfo;
-    if (!getLocalTime(&timeinfo)) {
-        Serial.println("Failed to obtain time");
-        return;
-    }
-
-    Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-    Serial.print("Day of week: ");
-    Serial.println(&timeinfo, "%A");
-    Serial.print("Month: ");
-    Serial.println(&timeinfo, "%B");
-    Serial.print("Day of Month: ");
-    Serial.println(&timeinfo, "%d");
-    Serial.print("Year: ");
-    Serial.println(&timeinfo, "%Y");
-    Serial.print("Hour: ");
-    Serial.println(&timeinfo, "%H");
-    Serial.print("Hour (12 hour format): ");
-    Serial.println(&timeinfo, "%I");
-    Serial.print("Minute: ");
-    Serial.println(&timeinfo, "%M");
-    Serial.print("Second: ");
-    Serial.println(&timeinfo, "%S");
 }
