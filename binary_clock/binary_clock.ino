@@ -108,13 +108,37 @@ void loop() {
     }
     if (hour_button_pressed) {
         hour_button_pressed = false;
-        Serial.println("h");
+        process_hour_button_press();
     }
     if (minute_buttom_pressed) {
         minute_buttom_pressed = false;
-        Serial.println("m");
+        process_minute_button_press();
     }
     delay(10);
+}
+
+void process_hour_button_press() {
+    DateTime current_time = rtc.now();
+
+    DateTime new_time = DateTime(current_time.year(), current_time.month(), current_time.day(), (current_time.hour() + 1) % 24, current_time.minute(),
+                                 current_time.second());
+
+    rtc.adjust(new_time);
+
+    Serial.print("new time: ");
+    print_time(new_time);
+}
+
+void process_minute_button_press() {
+    DateTime current_time = rtc.now();
+
+    DateTime new_time =
+        DateTime(current_time.year(), current_time.month(), current_time.day(), current_time.hour(), (current_time.minute() + 1) % 60, 0);
+
+    rtc.adjust(new_time);
+
+    Serial.print("new time: ");
+    print_time(new_time);
 }
 
 void display_time() {
