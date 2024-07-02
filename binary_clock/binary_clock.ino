@@ -45,6 +45,7 @@ void IRAM_ATTR handle_wifi_switch_interupt() {  //
 void IRAM_ATTR handle_hour_button_interupt() {  //
     unsigned long current_time = millis();
 
+    // debounce button
     if (current_time - hour_button_last_pressed > button_debounce_time) {
         hour_button_pressed = true;
         hour_button_last_pressed = current_time;
@@ -53,6 +54,7 @@ void IRAM_ATTR handle_hour_button_interupt() {  //
 void IRAM_ATTR handle_minute_button_interupt() {  //
     unsigned long current_time = millis();
 
+    // debounce button
     if (current_time - minute_button_last_pressed > button_debounce_time) {
         minute_buttom_pressed = true;
         minute_button_last_pressed = current_time;
@@ -120,6 +122,7 @@ void loop() {
 void process_hour_button_press() {
     DateTime current_time = rtc.now();
 
+    // increment hour
     DateTime new_time = DateTime(current_time.year(), current_time.month(), current_time.day(), (current_time.hour() + 1) % 24, current_time.minute(),
                                  current_time.second());
 
@@ -132,6 +135,7 @@ void process_hour_button_press() {
 void process_minute_button_press() {
     DateTime current_time = rtc.now();
 
+    // increment minute and reset seconds
     DateTime new_time =
         DateTime(current_time.year(), current_time.month(), current_time.day(), current_time.hour(), (current_time.minute() + 1) % 60, 0);
 
