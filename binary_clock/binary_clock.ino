@@ -13,6 +13,8 @@
 // const int NUM_PIXELS = 104;
 const int NUM_PIXELS = 24;
 const int LED_PIN = 16;
+const int WIFI_SWITCH_PIN = 1;
+
 const char ntp_server[] = "pool.ntp.org";
 const long gmt_offset_sec = 0;
 const int daylight_offset_sec = 3600 * 2;
@@ -27,6 +29,8 @@ BH1750 light_meter;
 bool wifi_connected = false;
 
 void setup() {  //
+    pinMode(WIFI_SWITCH_PIN, INPUT_PULLDOWN);
+
     pixels.begin();
     Serial.begin(115200);
 
@@ -40,16 +44,20 @@ void setup() {  //
 
     light_meter.begin();
 
-    configure_wifi();
+    if (digitalRead(WIFI_SWITCH_PIN)) {
+        configure_wifi();
 
-    if (wifi_connected) {
-        configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
-        delay(500);
-        configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+        if (wifi_connected) {
+            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+            delay(500);
+            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
 
-        set_rtc_to_ntp();
+            set_rtc_to_ntp();
+        } else {
+            Serial.println("couldn't get time from NTP server because WiFi is not connected");
+        }
     } else {
-        Serial.println("couldn't get time from NTP server because wifi is not connected");
+        Serial.println("WiFi disabled by switch");
     }
 
     // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
