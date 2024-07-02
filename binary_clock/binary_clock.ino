@@ -11,7 +11,7 @@
 #define LED_BUILTIN 15
 
 // const int NUM_PIXELS = 104;
-const int NUM_PIXELS = 16;
+const int NUM_PIXELS = 24;
 const int LED_PIN = 16;
 const char ntp_server[] = "pool.ntp.org";
 const long gmt_offset_sec = 0;
@@ -55,7 +55,64 @@ void setup() {  //
     // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
 }
 
-void loop() {}
+void loop() {
+    display_time();
+    delay(1000);
+}
+
+void display_time() {
+    DateTime now = rtc.now();
+
+    uint8_t hour = now.hour();
+    uint8_t minute = now.minute();
+    uint8_t second = now.second();
+
+    uint8_t hour_0 = hour / 10;
+    uint8_t hour_1 = hour % 10;
+
+    uint8_t minute_0 = minute / 10;
+    uint8_t minute_1 = minute % 10;
+
+    uint8_t second_0 = second / 10;
+    uint8_t second_1 = second % 10;
+
+    uint32_t color = pixels.Color(16, 16, 16);
+
+    display_digit(hour_0, color, 0, true);
+    display_digit(hour_1, color, 4, false);
+    display_digit(minute_0, color, 8, true);
+    display_digit(minute_1, color, 12, false);
+    display_digit(second_0, color, 16, true);
+    display_digit(second_1, color, 20, false);
+
+    pixels.show();
+}
+
+void display_digit(uint8_t digit, uint32_t color, uint8_t offset, bool most_significant_bit_first) {
+    const uint8_t end_index = offset + 4;
+
+    uint8_t mask = 0b0001;
+
+    if (most_significant_bit_first) {
+        mask = 0b1000;
+    }
+
+    for (uint8_t i = offset; i < end_index; i++) {
+        if ((bool)(digit & mask)) {
+            pixels.setPixelColor(i, color);
+            // Serial.print("1");
+        } else {
+            pixels.setPixelColor(i, 0);
+            // Serial.print("0");
+        }
+
+        if (most_significant_bit_first) {
+            mask >>= 1;
+        } else {
+            mask <<= 1;
+        }
+    }
+}
 
 float get_light() {
     float lux = light_meter.readLightLevel();
@@ -98,6 +155,20 @@ void print_time(tm* timeinfo) {
     // Serial.println(timeinfo, "%M");
     // Serial.print("Second: ");
     // Serial.println(timeinfo, "%S");
+}
+
+void print_time(DateTime datetime) {
+    Serial.print(datetime.year());
+    Serial.print("-");
+    Serial.printf("%02d", datetime.month());
+    Serial.print("-");
+    Serial.printf("%02d", datetime.day());
+    Serial.print(" ");
+    Serial.printf("%02d", datetime.hour());
+    Serial.print(":");
+    Serial.printf("%02d", datetime.minute());
+    Serial.print(":");
+    Serial.printf("%02d\n", datetime.second());
 }
 
 void configure_wifi() {
