@@ -14,10 +14,14 @@
 const int NUM_PIXELS = 24;
 const int LED_PIN = 16;
 const int WIFI_SWITCH_PIN = 1;
+const int HOUR_BUTTON_PIN = 2;
+const int MINUTE_BUTTON_PIN = 3;
 
 const char ntp_server[] = "pool.ntp.org";
 const long gmt_offset_sec = 0;
 const int daylight_offset_sec = 3600 * 2;
+
+unsigned int button_debounce_time = 200;  // in ms
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -28,8 +32,37 @@ BH1750 light_meter;
 
 bool wifi_connected = false;
 
+bool wifi_switch_changed = false;
+bool hour_button_pressed = false;
+bool minute_buttom_pressed = false;
+
+unsigned long hour_button_last_pressed = 0;
+unsigned long minute_button_last_pressed = 0;
+
+void IRAM_ATTR handle_wifi_switch_interupt() {  //
+    wifi_switch_changed = true;
+}
+void IRAM_ATTR handle_hour_button_interupt() {  //
+    unsigned long current_time = millis();
+
+    if (current_time - hour_button_last_pressed > button_debounce_time) {
+        hour_button_pressed = true;
+        hour_button_last_pressed = current_time;
+    }
+}
+void IRAM_ATTR handle_minute_button_interupt() {  //
+    unsigned long current_time = millis();
+
+    if (current_time - minute_button_last_pressed > button_debounce_time) {
+        minute_buttom_pressed = true;
+        minute_button_last_pressed = current_time;
+    }
+}
+
 void setup() {  //
     pinMode(WIFI_SWITCH_PIN, INPUT_PULLDOWN);
+    pinMode(HOUR_BUTTON_PIN, INPUT_PULLDOWN);
+    pinMode(MINUTE_BUTTON_PIN, INPUT_PULLDOWN);
 
     pixels.begin();
     Serial.begin(115200);
@@ -60,12 +93,28 @@ void setup() {  //
         Serial.println("WiFi disabled by switch");
     }
 
+    attachInterrupt(WIFI_SWITCH_PIN, &handle_wifi_switch_interupt, CHANGE);
+    attachInterrupt(HOUR_BUTTON_PIN, &handle_hour_button_interupt, RISING);
+    attachInterrupt(MINUTE_BUTTON_PIN, &handle_minute_button_interupt, RISING);
+
     // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
 }
 
 void loop() {
     display_time();
-    delay(1000);
+    if (wifi_switch_changed) {
+        wifi_switch_changed = false;
+        Serial.println(digitalRead(WIFI_SWITCH_PIN));
+    }
+    if (hour_button_pressed) {
+        hour_button_pressed = false;
+        Serial.println("h");
+    }
+    if (minute_buttom_pressed) {
+        minute_buttom_pressed = false;
+        Serial.println("m");
+    }
+    delay(10);
 }
 
 void display_time() {
