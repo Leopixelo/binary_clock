@@ -22,6 +22,7 @@ const long gmt_offset_sec = 0;
 const int daylight_offset_sec = 3600 * 2;
 
 unsigned int button_debounce_time = 200;  // in ms
+unsigned int switch_debounce_time = 100;  // in ms
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -30,17 +31,19 @@ RTC_DS3231 rtc;
 
 BH1750 light_meter;
 
-bool wifi_connected = false;
+bool wifi_initially_connected = false;
 
 bool wifi_switch_changed = false;
 bool hour_button_pressed = false;
 bool minute_buttom_pressed = false;
 
+unsigned long wifi_switch_last_changed = 0;
 unsigned long hour_button_last_pressed = 0;
 unsigned long minute_button_last_pressed = 0;
 
 void IRAM_ATTR handle_wifi_switch_interupt() {  //
     wifi_switch_changed = true;
+    wifi_switch_last_changed = millis();
 }
 void IRAM_ATTR handle_hour_button_interupt() {  //
     unsigned long current_time = millis();
@@ -82,7 +85,7 @@ void setup() {  //
     if (digitalRead(WIFI_SWITCH_PIN)) {
         configure_wifi();
 
-        if (wifi_connected) {
+        if (wifi_initially_connected) {
             configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
             delay(500);
             configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
@@ -104,9 +107,9 @@ void setup() {  //
 
 void loop() {
     display_time();
-    if (wifi_switch_changed) {
+    if (wifi_switch_changed && millis() - wifi_switch_last_changed > switch_debounce_time) {
         wifi_switch_changed = false;
-        Serial.println(digitalRead(WIFI_SWITCH_PIN));
+        process_wifi_switch_change();
     }
     if (hour_button_pressed) {
         hour_button_pressed = false;
@@ -117,6 +120,26 @@ void loop() {
         process_minute_button_press();
     }
     delay(10);
+}
+
+void process_wifi_switch_change() {
+    if (digitalRead(WIFI_SWITCH_PIN)) {
+        if (!WiFi.isConnected()) {
+            configure_wifi();
+        }
+
+        if (wifi_initially_connected) {
+            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+            delay(500);
+            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+
+            set_rtc_to_ntp();
+        } else {
+            Serial.println("couldn't get time from NTP server because WiFi is not connected");
+        }
+    } else {
+        WiFi.disconnect();
+    }
 }
 
 void process_hour_button_press() {
@@ -270,7 +293,7 @@ void configure_wifi() {
     int wifi_retry_count = 20;
 
     // wait for the WiFi event
-    while (wifi_retry_count > 0 && wifi_connected == false) {
+    while (wifi_retry_count > 0 && wifi_initially_connected == false) {
         wifi_retry_count--;
 
         switch (WiFi.status()) {
@@ -294,7 +317,7 @@ void configure_wifi() {
                 Serial.println("[WiFi] WiFi is connected!");
                 Serial.print("[WiFi] IP address: ");
                 Serial.println(WiFi.localIP());
-                wifi_connected = true;
+                wifi_initially_connected = true;
                 break;
             default:
                 Serial.print("[WiFi] WiFi Status: ");
