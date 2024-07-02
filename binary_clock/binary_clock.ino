@@ -1,5 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <Arduino.h>
+#include <BH1750.h>
 // #include <ESP32Time.h> // internal RTC
 #include <RTClib.h>  // external RTC (DS3231)
 #include <WiFi.h>
@@ -21,6 +22,8 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_
 // ESP32Time rtc(3600);  // offset in seconds GMT+1
 RTC_DS3231 rtc;
 
+BH1750 light_meter;
+
 bool wifi_connected = false;
 
 void setup() {  //
@@ -34,6 +37,8 @@ void setup() {  //
         Serial.println("RTC module is NOT found");
         while (1);
     }
+
+    light_meter.begin();
 
     configure_wifi();
 
@@ -51,6 +56,12 @@ void setup() {  //
 }
 
 void loop() {
+    float lux = light_meter.readLightLevel();
+    Serial.print("Light: ");
+    Serial.print(lux);
+    Serial.println(" lx");
+    delay(200);
+
     DateTime now = rtc.now();
     Serial.print("ESP32 RTC Date Time: ");
     Serial.print(now.year(), DEC);
