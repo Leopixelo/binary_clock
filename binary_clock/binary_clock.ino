@@ -17,9 +17,12 @@ const int WIFI_SWITCH_PIN = 1;
 const int HOUR_BUTTON_PIN = 2;
 const int MINUTE_BUTTON_PIN = 3;
 
+// reference for timezones: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
+const String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";  // timezone for Europe/Berlin
 const char ntp_server[] = "pool.ntp.org";
-const long gmt_offset_sec = 0;
-const int daylight_offset_sec = 3600 * 2;
+const long gmt_offset_sec = 0;  // not needed if timezone is set
+// const int daylight_offset_sec = 3600 * 2;  // not needed if timezone is set
+const int daylight_offset_sec = 0;  // not needed if timezone is set
 
 unsigned int button_debounce_time = 200;  // in ms
 unsigned int switch_debounce_time = 100;  // in ms
@@ -85,15 +88,7 @@ void setup() {  //
     if (digitalRead(WIFI_SWITCH_PIN)) {
         configure_wifi();
 
-        if (wifi_initially_connected) {
-            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
-            delay(500);
-            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
-
-            set_rtc_to_ntp();
-        } else {
-            Serial.println("couldn't get time from NTP server because WiFi is not connected");
-        }
+        update_time();
     } else {
         Serial.println("WiFi disabled by switch");
     }
@@ -128,15 +123,7 @@ void process_wifi_switch_change() {
             configure_wifi();
         }
 
-        if (wifi_initially_connected) {
-            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
-            delay(500);
-            configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
-
-            set_rtc_to_ntp();
-        } else {
-            Serial.println("couldn't get time from NTP server because WiFi is not connected");
-        }
+        update_time();
     } else {
         WiFi.disconnect();
     }
@@ -234,9 +221,11 @@ void set_rtc_to_ntp() {
         return;
     }
 
-    if (timeinfo.tm_year > 100) {
-        timeinfo.tm_year -= 100;
-    }
+    // Serial.println(timeinfo.tm_year);
+
+    // if (timeinfo.tm_year > 100) {
+    //     timeinfo.tm_year -= 100;
+    // }
 
     rtc.adjust(DateTime(timeinfo.tm_year, timeinfo.tm_mon, timeinfo.tm_mday, timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec));
 
@@ -277,6 +266,26 @@ void print_time(DateTime datetime) {
     Serial.printf("%02d", datetime.minute());
     Serial.print(":");
     Serial.printf("%02d\n", datetime.second());
+}
+
+void update_time() {
+    if (wifi_initially_connected) {
+        configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+        delay(500);
+        configTime(gmt_offset_sec, daylight_offset_sec, ntp_server);
+
+        set_timezone(timezone);
+
+        set_rtc_to_ntp();
+    } else {
+        Serial.println("couldn't get time from NTP server because WiFi is not connected");
+    }
+}
+
+void set_timezone(String timezone) {
+    Serial.printf("setting Timezone to %s\n", timezone.c_str());
+    setenv("TZ", timezone.c_str(), 1);  //  Now adjust the TZ.  Clock settings are adjusted to show the new local time
+    tzset();
 }
 
 void configure_wifi() {
