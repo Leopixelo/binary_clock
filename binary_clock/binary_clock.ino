@@ -55,51 +55,11 @@ void setup() {  //
     // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
 }
 
-void loop() {
+void loop() {}
+
+float get_light() {
     float lux = light_meter.readLightLevel();
-    Serial.print("Light: ");
-    Serial.print(lux);
-    Serial.println(" lx");
-    delay(200);
-
-    DateTime now = rtc.now();
-    Serial.print("ESP32 RTC Date Time: ");
-    Serial.print(now.year(), DEC);
-    Serial.print('/');
-    Serial.print(now.month(), DEC);
-    Serial.print('/');
-    Serial.print(now.day(), DEC);
-    Serial.print(" (");
-    Serial.print(now.dayOfTheWeek());
-    Serial.print(") ");
-    Serial.print(now.hour(), DEC);
-    Serial.print(':');
-    Serial.print(now.minute(), DEC);
-    Serial.print(':');
-    Serial.println(now.second(), DEC);
-
-    delay(1000);
-
-    // struct tm timeinfo;
-    // get_local_time(&timeinfo);
-
-    // Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-    // Serial.print("Day of week: ");
-    // Serial.println(&timeinfo, "%A");
-    // Serial.print("Month: ");
-    // Serial.println(&timeinfo, "%B");
-    // Serial.print("Day of Month: ");
-    // Serial.println(&timeinfo, "%d");
-    // Serial.print("Year: ");
-    // Serial.println(&timeinfo, "%Y");
-    // Serial.print("Hour: ");
-    // Serial.println(&timeinfo, "%H");
-    // Serial.print("Hour (12 hour format): ");
-    // Serial.println(&timeinfo, "%I");
-    // Serial.print("Minute: ");
-    // Serial.println(&timeinfo, "%M");
-    // Serial.print("Second: ");
-    // Serial.println(&timeinfo, "%S");
+    return lux;
 }
 
 void set_rtc_to_ntp() {
