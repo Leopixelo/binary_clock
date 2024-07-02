@@ -49,3 +49,7 @@
 # Arduino build cache
 
 build/
+
+# config file
+
+binary_clock/config.cpp
