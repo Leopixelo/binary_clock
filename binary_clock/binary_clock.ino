@@ -16,6 +16,7 @@ const int LED_PIN = 16;
 const int WIFI_SWITCH_PIN = 1;
 const int HOUR_BUTTON_PIN = 2;
 const int MINUTE_BUTTON_PIN = 3;
+const int RTC_INTERRUPT_PIN = 10;
 
 // reference for timezones: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";  // timezone for Europe/Berlin
@@ -39,6 +40,7 @@ bool wifi_initially_connected = false;
 bool wifi_switch_changed = false;
 bool hour_button_pressed = false;
 bool minute_buttom_pressed = false;
+bool rtc_interrupt = false;
 
 unsigned long wifi_switch_last_changed = 0;
 unsigned long hour_button_last_pressed = 0;
@@ -65,6 +67,10 @@ void IRAM_ATTR handle_minute_button_interrupt() {  //
         minute_buttom_pressed = true;
         minute_button_last_pressed = current_time;
     }
+}
+void IRAM_ATTR handle_rtc_interrupt() {  //
+    rtc_interrupt = true;
+    // Serial.println("rtc interrupt");
 }
 
 void setup() {  //
@@ -97,11 +103,17 @@ void setup() {  //
     attachInterrupt(HOUR_BUTTON_PIN, &handle_hour_button_interrupt, RISING);
     attachInterrupt(MINUTE_BUTTON_PIN, &handle_minute_button_interrupt, RISING);
 
+    rtc.writeSqwPinMode(DS3231_SquareWave1Hz);
+    attachInterrupt(RTC_INTERRUPT_PIN, &handle_rtc_interrupt, FALLING);
+
     // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
 }
 
 void loop() {
-    display_time();
+    if (rtc_interrupt) {
+        rtc_interrupt = false;
+        display_time();
+    }
     if (wifi_switch_changed && millis() - wifi_switch_last_changed > switch_debounce_time) {
         wifi_switch_changed = false;
         process_wifi_switch_change();
@@ -114,7 +126,7 @@ void loop() {
         minute_buttom_pressed = false;
         process_minute_button_press();
     }
-    delay(10);
+    delayMicroseconds(250);
 }
 
 void process_wifi_switch_change() {
@@ -157,6 +169,8 @@ void process_minute_button_press() {
 
 void display_time() {
     DateTime now = rtc.now();
+
+    // print_time(now);
 
     uint8_t hour = now.hour();
     uint8_t minute = now.minute();
