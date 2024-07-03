@@ -17,6 +17,7 @@ const int WIFI_SWITCH_PIN = 1;
 const int HOUR_BUTTON_PIN = 2;
 const int MINUTE_BUTTON_PIN = 3;
 const int RTC_INTERRUPT_PIN = 10;
+const int LIGHT_POTI_PIN = 8;
 
 // reference for timezones: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";  // timezone for Europe/Berlin
@@ -45,6 +46,18 @@ bool rtc_interrupt = false;
 unsigned long wifi_switch_last_changed = 0;
 unsigned long hour_button_last_pressed = 0;
 unsigned long minute_button_last_pressed = 0;
+
+// defines how often the light adjustment runs
+const unsigned int light_refresh_counter_init = 400;  // 4 kHz / 400 = 10 Hz
+unsigned int light_refresh_counter = light_refresh_counter_init;
+// defines size of rolling average
+const unsigned int light_average_size = 50;  // 50 / 10 Hz = 5 s
+double light_average = 0.0625;
+
+float light_sensor_max = 500.0;
+
+uint32_t last_color = pixels.Color(16, 16, 16);
+uint32_t color = pixels.Color(16, 16, 16);
 
 void IRAM_ATTR handle_wifi_switch_interrupt() {  //
     wifi_switch_changed = true;
@@ -77,6 +90,7 @@ void setup() {  //
     pinMode(WIFI_SWITCH_PIN, INPUT_PULLDOWN);
     pinMode(HOUR_BUTTON_PIN, INPUT_PULLDOWN);
     pinMode(MINUTE_BUTTON_PIN, INPUT_PULLDOWN);
+    pinMode(LIGHT_POTI_PIN, INPUT);
 
     pixels.begin();
     Serial.begin(115200);
@@ -114,6 +128,25 @@ void loop() {
         rtc_interrupt = false;
         display_time();
     }
+    if (light_refresh_counter == 0) {
+        light_refresh_counter = light_refresh_counter_init;
+
+        double current_light = (measure_light() / light_sensor_max) * (analogRead(LIGHT_POTI_PIN) / 8192.0);
+
+        // calculate rolling average
+        light_average -= light_average / light_average_size;
+        light_average += (current_light) / light_average_size;
+
+        uint8_t bright = 255 * light_average;
+        bright = max((uint8_t)1, bright);
+
+        last_color = color;
+        color = pixels.Color(bright, bright, bright);
+
+        if (last_color != color) {
+            display_time();
+        }
+    }
     if (wifi_switch_changed && millis() - wifi_switch_last_changed > switch_debounce_time) {
         wifi_switch_changed = false;
         process_wifi_switch_change();
@@ -126,6 +159,9 @@ void loop() {
         minute_buttom_pressed = false;
         process_minute_button_press();
     }
+
+    light_refresh_counter--;
+
     delayMicroseconds(250);
 }
 
@@ -186,8 +222,6 @@ void display_time() {
     uint8_t second_0 = second / 10;
     uint8_t second_1 = second % 10;
 
-    uint32_t color = pixels.Color(16, 16, 16);
-
     display_digit(hour_0, color, 0, true);
     display_digit(hour_1, color, 4, false);
     display_digit(minute_0, color, 8, true);
@@ -224,9 +258,9 @@ void display_digit(uint8_t digit, uint32_t color, uint8_t offset, bool most_sign
     }
 }
 
-float get_light() {
+float measure_light() {
     float lux = light_meter.readLightLevel();
-    return lux;
+    return min(lux, light_sensor_max);
 }
 
 void set_rtc_to_ntp() {
