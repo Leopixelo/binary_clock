@@ -138,6 +138,7 @@ void process_wifi_switch_change() {
         update_time();
     } else {
         WiFi.disconnect();
+        Serial.println("WiFi disabled");
     }
 }
 
