@@ -44,11 +44,11 @@ unsigned long wifi_switch_last_changed = 0;
 unsigned long hour_button_last_pressed = 0;
 unsigned long minute_button_last_pressed = 0;
 
-void IRAM_ATTR handle_wifi_switch_interupt() {  //
+void IRAM_ATTR handle_wifi_switch_interrupt() {  //
     wifi_switch_changed = true;
     wifi_switch_last_changed = millis();
 }
-void IRAM_ATTR handle_hour_button_interupt() {  //
+void IRAM_ATTR handle_hour_button_interrupt() {  //
     unsigned long current_time = millis();
 
     // debounce button
@@ -57,7 +57,7 @@ void IRAM_ATTR handle_hour_button_interupt() {  //
         hour_button_last_pressed = current_time;
     }
 }
-void IRAM_ATTR handle_minute_button_interupt() {  //
+void IRAM_ATTR handle_minute_button_interrupt() {  //
     unsigned long current_time = millis();
 
     // debounce button
@@ -93,9 +93,9 @@ void setup() {  //
         Serial.println("WiFi disabled by switch");
     }
 
-    attachInterrupt(WIFI_SWITCH_PIN, &handle_wifi_switch_interupt, CHANGE);
-    attachInterrupt(HOUR_BUTTON_PIN, &handle_hour_button_interupt, RISING);
-    attachInterrupt(MINUTE_BUTTON_PIN, &handle_minute_button_interupt, RISING);
+    attachInterrupt(WIFI_SWITCH_PIN, &handle_wifi_switch_interrupt, CHANGE);
+    attachInterrupt(HOUR_BUTTON_PIN, &handle_hour_button_interrupt, RISING);
+    attachInterrupt(MINUTE_BUTTON_PIN, &handle_minute_button_interrupt, RISING);
 
     // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));  // set RTC time to compile time
 }
