@@ -8,9 +8,9 @@
 
 #include "config.cpp"
 
-uint16_t led_hue_degrees = 0;  // between 0 and 360
-uint16_t led_hue = led_hue_degrees * 182;
-uint8_t led_saturation = 0;
+const uint16_t led_hue_degrees = 0;  // between 0 and 360
+const uint16_t led_hue = led_hue_degrees * 182;
+const uint8_t led_saturation = 0;
 
 // reference for timezones: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";  // timezone for Europe/Berlin
@@ -19,8 +19,8 @@ const long gmt_offset_sec = 0;  // not needed if timezone is set
 // const int daylight_offset_sec = 3600 * 2;  // not needed if timezone is set
 const int daylight_offset_sec = 0;  // not needed if timezone is set
 
-unsigned int button_debounce_time = 200;  // in ms
-unsigned int switch_debounce_time = 100;  // in ms
+const unsigned int button_debounce_time = 200;  // in ms
+const unsigned int switch_debounce_time = 100;  // in ms
 
 // const int NUM_PIXELS = 104;
 const int NUM_PIXELS = 24;
@@ -38,8 +38,8 @@ unsigned int light_refresh_counter = light_refresh_counter_init;
 const unsigned int light_average_size = 50;  // 50 / 10 Hz = 5 s
 double light_average = 0.0625;
 
-float light_sensor_max_gained_lux = 500.0;
-float light_sensor_gain = 1.0;  // is applied before capping at light_sensor_max_gained_lux
+const float light_sensor_max_gained_lux = 500.0;
+const float light_sensor_gain = 1.0;  // is applied before capping at light_sensor_max_gained_lux
 
 bool wifi_initially_connected = false;
 
