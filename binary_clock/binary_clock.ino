@@ -8,6 +8,10 @@
 
 #include "config.cpp"
 
+uint16_t led_hue_degrees = 0;  // between 0 and 360
+uint16_t led_hue = led_hue_degrees * 182;
+uint8_t led_saturation = 0;
+
 // reference for timezones: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";  // timezone for Europe/Berlin
 const char ntp_server[] = "pool.ntp.org";
@@ -47,15 +51,15 @@ unsigned long wifi_switch_last_changed = 0;
 unsigned long hour_button_last_pressed = 0;
 unsigned long minute_button_last_pressed = 0;
 
-uint32_t last_color = pixels.Color(16, 16, 16);
-uint32_t color = pixels.Color(16, 16, 16);
-
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
 // ESP32Time rtc(3600);  // offset in seconds GMT+1
 RTC_DS3231 rtc;
 
 BH1750 light_meter;
+
+uint32_t color = pixels.ColorHSV(led_hue, led_saturation, UINT8_MAX* light_average);
+uint32_t last_color = color;
 
 void IRAM_ATTR handle_wifi_switch_interrupt() {  //
     wifi_switch_changed = true;
@@ -139,7 +143,7 @@ void loop() {
         bright = max((uint8_t)1, bright);
 
         last_color = color;
-        color = pixels.Color(bright, bright, bright);
+        color = pixels.ColorHSV(led_hue, led_saturation, bright);
 
         if (last_color != color) {
             display_time();
