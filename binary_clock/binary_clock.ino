@@ -138,21 +138,7 @@ void loop() {
     if (light_refresh_counter == 0) {
         light_refresh_counter = light_refresh_counter_init;
 
-        double current_light = (measure_light() / light_sensor_max_gained_lux) * (analogRead(LIGHT_POTI_PIN) / 8192.0);
-
-        // calculate rolling average
-        light_average -= light_average / light_average_size;
-        light_average += (current_light) / light_average_size;
-
-        uint8_t bright = 255 * light_average;
-        bright = max((uint8_t)1, bright);
-
-        last_color = color;
-        color = pixels.ColorHSV(led_hue, led_saturation, bright);
-
-        if (last_color != color) {
-            display_time();
-        }
+        adjust_brightness();
     }
     if (wifi_switch_changed && millis() - wifi_switch_last_changed > switch_debounce_time) {
         wifi_switch_changed = false;
@@ -268,6 +254,24 @@ void display_digit(uint8_t digit, uint32_t color, uint8_t offset, bool most_sign
         } else {
             mask <<= 1;
         }
+    }
+}
+
+void adjust_brightness() {
+    double current_light = (measure_light() / light_sensor_max_gained_lux) * (analogRead(LIGHT_POTI_PIN) / 8192.0);
+
+    // calculate rolling average
+    light_average -= light_average / light_average_size;
+    light_average += (current_light) / light_average_size;
+
+    uint8_t bright = 255 * light_average;
+    bright = max((uint8_t)1, bright);
+
+    last_color = color;
+    color = pixels.ColorHSV(led_hue, led_saturation, bright);
+
+    if (last_color != color) {
+        display_time();
     }
 }
 
