@@ -8,8 +8,10 @@
 
 #include "config.cpp"
 
+const uint16_t hue_degrees_factor = 182;
+
 const uint16_t led_hue_degrees = 0;  // between 0 and 360
-const uint16_t led_hue = led_hue_degrees * 182;
+const uint16_t led_hue = led_hue_degrees * hue_degrees_factor;
 const uint8_t led_saturation = 0;
 
 // reference for timezones: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
@@ -22,12 +24,18 @@ const int daylight_offset_sec = 0;  // not needed if timezone is set
 const unsigned int button_debounce_time = 200;  // in ms
 const unsigned int switch_debounce_time = 100;  // in ms
 
+unsigned int status_counter = 0;
+const unsigned int status_duration = 10;  // in seconds
+const unsigned int status_counter_init = status_duration * 4000;
+bool show_status = false;
+
 // const int NUM_PIXELS = 104;
 const int NUM_PIXELS = 24;
 const int LED_PIN = 16;
 const int WIFI_SWITCH_PIN = 1;
 const int HOUR_BUTTON_PIN = 2;
 const int MINUTE_BUTTON_PIN = 3;
+const int STATUS_BUTTON_PIN = 4;
 const int RTC_INTERRUPT_PIN = 10;
 const int LIGHT_POTI_PIN = 8;
 
@@ -46,11 +54,13 @@ bool wifi_initially_connected = false;
 bool wifi_switch_changed = false;
 bool hour_button_pressed = false;
 bool minute_buttom_pressed = false;
+bool status_buttom_pressed = false;
 bool rtc_interrupt = false;
 
 unsigned long wifi_switch_last_changed = 0;
 unsigned long hour_button_last_pressed = 0;
 unsigned long minute_button_last_pressed = 0;
+unsigned long status_button_last_pressed = 0;
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
 
@@ -61,6 +71,8 @@ BH1750 light_meter;
 
 uint32_t color = pixels.ColorHSV(led_hue, led_saturation, UINT8_MAX* light_average);
 uint32_t last_color = color;
+
+uint8_t led_brightness = 16;
 
 void IRAM_ATTR handle_wifi_switch_interrupt() {  //
     wifi_switch_changed = true;
@@ -84,6 +96,15 @@ void IRAM_ATTR handle_minute_button_interrupt() {  //
         minute_button_last_pressed = current_time;
     }
 }
+void IRAM_ATTR handle_status_button_interrupt() {  //
+    unsigned long current_time = millis();
+
+    // debounce button
+    if (current_time - status_button_last_pressed > button_debounce_time) {
+        status_buttom_pressed = true;
+        status_button_last_pressed = current_time;
+    }
+}
 void IRAM_ATTR handle_rtc_interrupt() {  //
     rtc_interrupt = true;
     // Serial.println("rtc interrupt");
@@ -93,6 +114,7 @@ void setup() {  //
     pinMode(WIFI_SWITCH_PIN, INPUT_PULLDOWN);
     pinMode(HOUR_BUTTON_PIN, INPUT_PULLDOWN);
     pinMode(MINUTE_BUTTON_PIN, INPUT_PULLDOWN);
+    pinMode(STATUS_BUTTON_PIN, INPUT_PULLDOWN);
     pinMode(LIGHT_POTI_PIN, INPUT);
 
     pixels.begin();
@@ -123,6 +145,7 @@ void setup() {  //
     attachInterrupt(WIFI_SWITCH_PIN, &handle_wifi_switch_interrupt, CHANGE);
     attachInterrupt(HOUR_BUTTON_PIN, &handle_hour_button_interrupt, RISING);
     attachInterrupt(MINUTE_BUTTON_PIN, &handle_minute_button_interrupt, RISING);
+    attachInterrupt(STATUS_BUTTON_PIN, &handle_status_button_interrupt, RISING);
 
     rtc.writeSqwPinMode(DS3231_SquareWave1Hz);
     attachInterrupt(RTC_INTERRUPT_PIN, &handle_rtc_interrupt, FALLING);
@@ -151,6 +174,19 @@ void loop() {
     if (minute_buttom_pressed) {
         minute_buttom_pressed = false;
         process_minute_button_press();
+    }
+    if (status_buttom_pressed) {
+        status_buttom_pressed = false;
+        status_counter = status_counter_init;
+
+        show_status = true;
+        display_time();
+    }
+
+    if (status_counter > 0) {
+        status_counter--;
+    } else {  // status == 0
+        show_status = false;
     }
 
     light_refresh_counter--;
@@ -228,6 +264,10 @@ void display_time() {
     display_digit(second_0, color, 16, true);
     display_digit(second_1, color, 20, false);
 
+    if (show_status) {
+        display_status(0);
+    }
+
     pixels.show();
 }
 
@@ -269,10 +309,23 @@ void adjust_brightness() {
 
     last_color = color;
     color = pixels.ColorHSV(led_hue, led_saturation, bright);
+    led_brightness = bright;
 
     if (last_color != color) {
         display_time();
     }
+}
+
+void display_status(uint8_t offset) {
+    uint32_t status_0_color;
+
+    if (WiFi.status() == WL_CONNECTED) {
+        status_0_color = pixels.ColorHSV(130 * hue_degrees_factor, UINT8_MAX, led_brightness);
+    } else {
+        status_0_color = pixels.ColorHSV(0 * hue_degrees_factor, UINT8_MAX, led_brightness);
+    }
+
+    pixels.setPixelColor(offset, status_0_color);
 }
 
 float measure_light() {
