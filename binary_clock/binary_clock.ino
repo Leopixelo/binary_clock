@@ -38,7 +38,8 @@ unsigned int light_refresh_counter = light_refresh_counter_init;
 const unsigned int light_average_size = 50;  // 50 / 10 Hz = 5 s
 double light_average = 0.0625;
 
-float light_sensor_max = 500.0;
+float light_sensor_max_gained_lux = 500.0;
+float light_sensor_gain = 1.0;  // is applied before capping at light_sensor_max_gained_lux
 
 bool wifi_initially_connected = false;
 
@@ -133,7 +134,7 @@ void loop() {
     if (light_refresh_counter == 0) {
         light_refresh_counter = light_refresh_counter_init;
 
-        double current_light = (measure_light() / light_sensor_max) * (analogRead(LIGHT_POTI_PIN) / 8192.0);
+        double current_light = (measure_light() / light_sensor_max_gained_lux) * (analogRead(LIGHT_POTI_PIN) / 8192.0);
 
         // calculate rolling average
         light_average -= light_average / light_average_size;
@@ -262,7 +263,7 @@ void display_digit(uint8_t digit, uint32_t color, uint8_t offset, bool most_sign
 
 float measure_light() {
     float lux = light_meter.readLightLevel();
-    return min(lux, light_sensor_max);
+    return min(lux * light_sensor_gain, light_sensor_max_gained_lux);
 }
 
 void set_rtc_to_ntp() {
