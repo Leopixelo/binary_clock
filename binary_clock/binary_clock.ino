@@ -8,17 +8,6 @@
 
 #include "config.cpp"
 
-#define LED_BUILTIN 15
-
-// const int NUM_PIXELS = 104;
-const int NUM_PIXELS = 24;
-const int LED_PIN = 16;
-const int WIFI_SWITCH_PIN = 1;
-const int HOUR_BUTTON_PIN = 2;
-const int MINUTE_BUTTON_PIN = 3;
-const int RTC_INTERRUPT_PIN = 10;
-const int LIGHT_POTI_PIN = 8;
-
 // reference for timezones: https://github.com/nayarsystems/posix_tz_db/blob/master/zones.csv
 const String timezone = "CET-1CEST,M3.5.0,M10.5.0/3";  // timezone for Europe/Berlin
 const char ntp_server[] = "pool.ntp.org";
@@ -29,12 +18,23 @@ const int daylight_offset_sec = 0;  // not needed if timezone is set
 unsigned int button_debounce_time = 200;  // in ms
 unsigned int switch_debounce_time = 100;  // in ms
 
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+// const int NUM_PIXELS = 104;
+const int NUM_PIXELS = 24;
+const int LED_PIN = 16;
+const int WIFI_SWITCH_PIN = 1;
+const int HOUR_BUTTON_PIN = 2;
+const int MINUTE_BUTTON_PIN = 3;
+const int RTC_INTERRUPT_PIN = 10;
+const int LIGHT_POTI_PIN = 8;
 
-// ESP32Time rtc(3600);  // offset in seconds GMT+1
-RTC_DS3231 rtc;
+// defines how often the light adjustment runs
+const unsigned int light_refresh_counter_init = 400;  // 4 kHz / 400 = 10 Hz
+unsigned int light_refresh_counter = light_refresh_counter_init;
+// defines size of rolling average
+const unsigned int light_average_size = 50;  // 50 / 10 Hz = 5 s
+double light_average = 0.0625;
 
-BH1750 light_meter;
+float light_sensor_max = 500.0;
 
 bool wifi_initially_connected = false;
 
@@ -47,17 +47,15 @@ unsigned long wifi_switch_last_changed = 0;
 unsigned long hour_button_last_pressed = 0;
 unsigned long minute_button_last_pressed = 0;
 
-// defines how often the light adjustment runs
-const unsigned int light_refresh_counter_init = 400;  // 4 kHz / 400 = 10 Hz
-unsigned int light_refresh_counter = light_refresh_counter_init;
-// defines size of rolling average
-const unsigned int light_average_size = 50;  // 50 / 10 Hz = 5 s
-double light_average = 0.0625;
-
-float light_sensor_max = 500.0;
-
 uint32_t last_color = pixels.Color(16, 16, 16);
 uint32_t color = pixels.Color(16, 16, 16);
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUM_PIXELS, LED_PIN, NEO_GRB + NEO_KHZ800);
+
+// ESP32Time rtc(3600);  // offset in seconds GMT+1
+RTC_DS3231 rtc;
+
+BH1750 light_meter;
 
 void IRAM_ATTR handle_wifi_switch_interrupt() {  //
     wifi_switch_changed = true;
