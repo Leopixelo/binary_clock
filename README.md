@@ -1,3 +1,11 @@
+# set up
+
+before flashing to the micro-controller, you have to:
+
+- make a copy of `binary_clock/config.template.cpp` in the same directory
+- rename the copy to `config.cpp`
+- optionally set your WiFi SSID and password to enable retrieving the current time via NTP
+
 # flashing
 
 see <https://www.wemos.cc/en/latest/s2/s2_mini.html>
