@@ -109,9 +109,13 @@ void setup() {  //
     light_meter.begin();
 
     if (digitalRead(WIFI_SWITCH_PIN)) {
-        configure_wifi();
+        if (wifi_ssid[0] == '\0') {  // if WiFi SSID is empty
+            Serial.println("no WiFi SSID set");
+        } else {
+            configure_wifi();
 
-        update_time();
+            update_time();
+        }
     } else {
         Serial.println("WiFi disabled by switch");
     }
@@ -170,6 +174,12 @@ void loop() {
 
 void process_wifi_switch_change() {
     if (digitalRead(WIFI_SWITCH_PIN)) {
+        if (wifi_ssid[0] == '\0') {  // if WiFi SSID is empty
+            Serial.println("no WiFi SSID set");
+
+            return;
+        }
+
         if (!WiFi.isConnected()) {
             configure_wifi();
         }
@@ -390,7 +400,7 @@ void configure_wifi() {
     }
 
     if (wifi_retry_count == 0) {
-        Serial.print("[WiFi] Failed to connect to WiFi!");
+        Serial.println("[WiFi] Failed to connect to WiFi!");
         // Use disconnect function to force stop trying to connect
         WiFi.disconnect();
     }
