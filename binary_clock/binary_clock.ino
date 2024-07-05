@@ -225,6 +225,8 @@ void process_hour_button_press() {
 
     Serial.print("new time: ");
     print_time(new_time);
+
+    display_time();
 }
 
 void process_minute_button_press() {
@@ -238,6 +240,8 @@ void process_minute_button_press() {
 
     Serial.print("new time: ");
     print_time(new_time);
+
+    display_time();
 }
 
 void display_time() {
