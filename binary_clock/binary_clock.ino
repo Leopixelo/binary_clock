@@ -48,6 +48,7 @@ double light_average = 0.0625;
 
 const float light_sensor_max_gained_lux = 500.0;
 const float light_sensor_gain = 1.0;  // is applied before capping at light_sensor_max_gained_lux
+const float light_poti_gain = 3.0;
 
 bool wifi_initially_connected = false;
 
@@ -301,8 +302,11 @@ void adjust_brightness() {
     float light_measurement = measure_light() / light_sensor_max_gained_lux;
     double light_poti = analogRead(LIGHT_POTI_PIN) / 8192.0;
     light_poti = 1 - light_poti;
+    light_poti *= light_poti_gain;
 
     double current_light = light_measurement * light_poti;
+
+    if (current_light > 1.0) current_light = 1.0;
 
     // calculate rolling average
     light_average -= light_average / light_average_size;
