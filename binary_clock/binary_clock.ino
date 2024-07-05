@@ -300,6 +300,7 @@ void display_digit(uint8_t digit, uint32_t color, uint8_t offset, bool most_sign
 void adjust_brightness() {
     float light_measurement = measure_light() / light_sensor_max_gained_lux;
     double light_poti = analogRead(LIGHT_POTI_PIN) / 8192.0;
+    light_poti = 1 - light_poti;
 
     double current_light = light_measurement * light_poti;
 
