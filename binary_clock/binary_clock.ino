@@ -31,7 +31,7 @@ bool show_status = false;
 
 // const int NUM_PIXELS = 104;
 const int NUM_PIXELS = 24;
-const int LED_PIN = 16;
+const int LED_PIN = 17;
 const int WIFI_SWITCH_PIN = 1;
 const int HOUR_BUTTON_PIN = 2;
 const int MINUTE_BUTTON_PIN = 3;
