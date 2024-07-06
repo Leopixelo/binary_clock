@@ -1,4 +1,8 @@
-# status
+# interface
+
+![interface](<binary clock interface.png>)
+
+## status
 
 By pressing the status button the first to LEDs of the first hour digit display status information.
 
@@ -8,6 +12,18 @@ By pressing the status button the first to LEDs of the first hour digit display 
 | ----- | ---------------------- |
 | red   | no WiFi connection     |
 | green | active WiFi connection |
+
+## WiFi
+
+Enable or disable WiFi. When enabled, retrieve current time via NTP.
+
+## h
+
+Advance time by one hour.
+
+## m
+
+Advance time by one minute and set seconds to 0.
 
 # set up
 
